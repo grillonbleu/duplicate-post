@@ -1012,3 +1012,17 @@ function duplicate_post_has_ancestors_marked( $post, $post_ids ) {
 	}
 	return ( 0 !== $ancestors_in_array );
 }
+
+function duplicate_post_sidebar_plugin_register() {
+	wp_register_script(
+		'duplicate-post-sidebar-js',
+		plugins_url( 'duplicate-post-gutenberg.js', __FILE__ ),
+		array( 'wp-plugins', 'wp-edit-post', 'wp-element', 'wp-components' )
+	);
+}
+add_action( 'init', 'duplicate_post_sidebar_plugin_register' );
+
+function duplicate_post_sidebar_plugin_script_enqueue() {
+	wp_enqueue_script( 'duplicate-post-sidebar-js' );
+}
+add_action( 'enqueue_block_editor_assets', 'duplicate_post_sidebar_plugin_script_enqueue' );
