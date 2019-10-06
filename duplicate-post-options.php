@@ -45,6 +45,7 @@ function duplicate_post_register_settings() {
 	register_setting( 'duplicate_post_group', 'duplicate_post_show_adminbar' );
 	register_setting( 'duplicate_post_group', 'duplicate_post_show_submitbox' );
 	register_setting( 'duplicate_post_group', 'duplicate_post_show_bulkactions' );
+	register_setting( 'duplicate_post_group', 'duplicate_post_show_blockeditor' );
 	register_setting( 'duplicate_post_group', 'duplicate_post_show_notice' );
 }
 
@@ -512,6 +513,18 @@ img#donate-button {
 													?>
 />
 								<?php esc_html_e( 'Bulk Actions', 'default' ); ?> </label>
+							<?php } ?>
+							<?php
+							if ( version_compare( $wp_version, '5.0' ) >= 0 ) {
+								?>
+													<label><input type="checkbox"
+													name="duplicate_post_show_blockeditor" value="1"
+													<?php
+													if ( 1 === intval( get_option( 'duplicate_post_show_blockeditor' ) ) ) {
+														echo 'checked="checked"';}
+													?>
+/>
+								<?php esc_html_e( 'Block Editor sidebar', 'default' ); ?> </label>
 							<?php } ?>
 					</td>
 				</tr>

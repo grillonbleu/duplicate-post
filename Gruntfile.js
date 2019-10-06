@@ -1,7 +1,7 @@
 module.exports = function( grunt ) {
 	'use strict';
 
-	grunt.loadNpmTasks( 'grunt-wp-readme-to-markdown');
+	grunt.loadNpmTasks( 'grunt-wp-readme-to-markdown' );
 
 	grunt.initConfig(
 		{

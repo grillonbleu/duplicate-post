@@ -1,0 +1,11 @@
+.duplicate-post-button-container{
+	display: flex;
+	justify-content: center;
+	padding: 10px;
+}
+
+.duplicate-post-button-container a{
+	width: 100%;
+	text-align: center;
+	justify-content: center;
+}
