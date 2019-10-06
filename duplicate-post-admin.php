@@ -423,8 +423,10 @@ function duplicate_post_save_as_new_post( $status = '' ) {
  *
  * @param integer $new_id New post ID.
  * @param WP_Post $post The original post object.
+ * @param string  $status The destination status (unused).
+ * @param array   $args The settings array.
  */
-function duplicate_post_copy_post_taxonomies( $new_id, $post ) {
+function duplicate_post_copy_post_taxonomies( $new_id, $post, $status, $args ) {
 	global $wpdb;
 	if ( isset( $wpdb->terms ) ) {
 		// Clear default category (added by wp_insert_post).
@@ -436,11 +438,11 @@ function duplicate_post_copy_post_taxonomies( $new_id, $post ) {
 			$post_taxonomies[] = 'post_format';
 		}
 
-		$taxonomies_blacklist = get_option( 'duplicate_post_taxonomies_blacklist' );
+		$taxonomies_blacklist = $args['taxonomies_blacklist'];
 		if ( '' === $taxonomies_blacklist ) {
 			$taxonomies_blacklist = array();
 		}
-		if ( intval( get_option( 'duplicate_post_copyformat' ) ) === 0 ) {
+		if ( intval( $args['copyformat'] ) === 0 ) {
 			$taxonomies_blacklist[] = 'post_format';
 		}
 		$taxonomies = array_diff( $post_taxonomies, $taxonomies_blacklist );
@@ -461,13 +463,15 @@ function duplicate_post_copy_post_taxonomies( $new_id, $post ) {
  *
  * @param integer $new_id The new post ID.
  * @param WP_Post $post The original post object.
+ * @param string  $status The destination status (unused).
+ * @param array   $args The settings array.
  */
-function duplicate_post_copy_post_meta_info( $new_id, $post ) {
+function duplicate_post_copy_post_meta_info( $new_id, $post, $status, $args ) {
 	$post_meta_keys = get_post_custom_keys( $post->ID );
 	if ( empty( $post_meta_keys ) ) {
 		return;
 	}
-	$meta_blacklist = get_option( 'duplicate_post_blacklist' );
+	$meta_blacklist = $args['blacklist'];
 	if ( '' === $meta_blacklist ) {
 		$meta_blacklist = array();
 	} else {
@@ -477,13 +481,20 @@ function duplicate_post_copy_post_meta_info( $new_id, $post ) {
 	}
 	$meta_blacklist[] = '_edit_lock'; // edit lock.
 	$meta_blacklist[] = '_edit_last'; // edit lock.
-	if ( intval( get_option( 'duplicate_post_copytemplate' ) ) === 0 ) {
+	if ( intval( $args['copytemplate'] ) === 0 ) {
 		$meta_blacklist[] = '_wp_page_template';
 	}
-	if ( intval( get_option( 'duplicate_post_copythumbnail' ) ) === 0 ) {
+	if ( intval( $args['copythumbnail'] ) === 0 ) {
 		$meta_blacklist[] = '_thumbnail_id';
 	}
 
+	/**
+	 * Filter on the blacklist of meta fields.
+	 *
+	 * @param array  $meta_blacklist Array of names of meta fields to skip during copy.
+	 *
+	 * @return array.
+	 */
 	$meta_blacklist = apply_filters( 'duplicate_post_blacklist_filter', $meta_blacklist );
 
 	$meta_blacklist_string = '(' . implode( ')|(', $meta_blacklist ) . ')';
@@ -500,6 +511,13 @@ function duplicate_post_copy_post_meta_info( $new_id, $post ) {
 		$meta_keys = array_diff( $post_meta_keys, $meta_blacklist );
 	}
 
+	/**
+	 * Filter on the list of meta fields minus the blacklisted items.
+	 *
+	 * @param array  $meta_keys Array of names of meta fields to copy.
+	 *
+	 * @return array.
+	 */
 	$meta_keys = apply_filters( 'duplicate_post_meta_keys_filter', $meta_keys );
 
 	foreach ( $meta_keys as $meta_key ) {
@@ -557,8 +575,10 @@ function duplicate_post_wp_slash( $value ) {
  *
  * @param integer $new_id The new post ID.
  * @param WP_Post $post The original post object.
+ * @param string  $status The destination status (unused).
+ * @param array   $args The settings array.
  */
-function duplicate_post_copy_attachments( $new_id, $post ) {
+function duplicate_post_copy_attachments( $new_id, $post, $status, $args ) {
 	// get thumbnail ID.
 	$old_thumbnail_id = get_post_thumbnail_id( $post->ID );
 	// get children.
@@ -609,7 +629,7 @@ function duplicate_post_copy_attachments( $new_id, $post ) {
 		}
 
 		// if we have cloned the post thumbnail, set the copy as the thumbnail for the new post.
-		if ( intval( get_option( 'duplicate_post_copythumbnail' ) ) === 1 && $old_thumbnail_id === $child->ID ) {
+		if ( intval( $args['copythumbnail'] ) === 1 && $old_thumbnail_id === $child->ID ) {
 			set_post_thumbnail( $new_id, $new_attachment_id );
 		}
 	}
@@ -620,9 +640,10 @@ function duplicate_post_copy_attachments( $new_id, $post ) {
  *
  * @param integer $new_id The new post ID.
  * @param WP_Post $post The original post object.
- * @param string  $status Optional. The destination status.
+ * @param string  $status The destination status.
+ * @param array   $args The settings array.
  */
-function duplicate_post_copy_children( $new_id, $post, $status = '' ) {
+function duplicate_post_copy_children( $new_id, $post, $status, $args ) {
 	// get children.
 	$children = get_posts(
 		array(
@@ -637,7 +658,7 @@ function duplicate_post_copy_children( $new_id, $post, $status = '' ) {
 		if ( 'attachment' === $child->post_type ) {
 			continue;
 		}
-		duplicate_post_create_duplicate( $child, $status, $new_id );
+		duplicate_post_perform_duplication( $child, $status, $new_id, $args );
 	}
 }
 
@@ -646,8 +667,10 @@ function duplicate_post_copy_children( $new_id, $post, $status = '' ) {
  *
  * @param integer $new_id The new post ID.
  * @param WP_Post $post The original post object.
+ * @param string  $status The destination status.
+ * @param array   $args The settings array.
  */
-function duplicate_post_copy_comments( $new_id, $post ) {
+function duplicate_post_copy_comments( $new_id, $post, $status, $args ) {
 	$comments = get_comments(
 		array(
 			'post_id' => $post->ID,
@@ -677,18 +700,20 @@ function duplicate_post_copy_comments( $new_id, $post ) {
 			'comment_karma'        => $comment->comment_karma,
 			'comment_approved'     => $comment->comment_approved,
 		);
-		if ( intval( get_option( 'duplicate_post_copydate' ) ) === 1 ) {
+		if ( intval( $args['copydate'] ) === 1 ) {
 			$commentdata['comment_date']     = $comment->comment_date;
 			$commentdata['comment_date_gmt'] = get_gmt_from_date( $comment->comment_date );
 		}
 		$new_comment_id = wp_insert_comment( $commentdata );
-		if ( intval( get_option( 'duplicate_post_copycommentmeta' ) ) === 1 ) {
-			$commentmeta = get_comment_meta( $new_comment_id );
-			foreach ( $commentmeta as $meta_key => $meta_value ) {
-				add_comment_meta( $new_comment_id, $meta_key, duplicate_post_wp_slash( $meta_value ) );
+		if ( false !== $new_comment_id ) {
+			if ( intval( $args['copycommentmeta'] ) === 1 ) {
+				$commentmeta = get_comment_meta( $new_comment_id );
+				foreach ( $commentmeta as $meta_key => $meta_value ) {
+					add_comment_meta( $new_comment_id, $meta_key, duplicate_post_wp_slash( $meta_value ) );
+				}
 			}
+			$old_id_to_new[ $comment->comment_ID ] = $new_comment_id;
 		}
-		$old_id_to_new[ $comment->comment_ID ] = $new_comment_id;
 	}
 }
 
@@ -759,6 +784,7 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 		'copyattachments'        => '0',
 		'copychildren'           => '0',
 		'copycomments'           => '0',
+		'copycommentmeta'		 => '0',
 		'copymenuorder'          => '1',
 		'blacklist'              => '',
 		'taxonomies_blacklist'   => array(),
@@ -924,10 +950,10 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	// information about a post you can hook this action to dupe that data.
 	if ( 'page' === $post->post_type || is_post_type_hierarchical( $post->post_type ) ) {
 		do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_page_duplicated' );
-		do_action( 'duplicate_post_page_duplicated', $new_post_id, $post, $status );
+		do_action( 'duplicate_post_page_duplicated', $new_post_id, $post, $status, $args );
 	} else {
 		do_action_deprecated( 'dp_duplicate_post', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
-		do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status );
+		do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status, $args );
 	}
 
 	delete_post_meta( $new_post_id, '_dp_original' );
