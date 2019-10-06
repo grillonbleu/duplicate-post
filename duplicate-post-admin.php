@@ -352,12 +352,7 @@ function duplicate_post_save_as_new_post( $status = '' ) {
 
 		// Die on insert error.
 		if ( is_wp_error( $new_id ) ) {
-			wp_die(
-				esc_html(
-					__( 'Copy creation failed, could not find original:', 'duplicate-post' ) . ' '
-					. htmlspecialchars( $id )
-				)
-			);
+			wp_die( esc_html( $new_id->get_error_message() ) );
 		}
 
 		if ( '' === $status ) {
@@ -374,6 +369,17 @@ function duplicate_post_save_as_new_post( $status = '' ) {
 			} else {
 				$sendback = remove_query_arg( array( 'trashed', 'untrashed', 'deleted', 'cloned', 'ids' ), $sendback );
 			}
+			/**
+			 * Filter on the redirect after copy
+			 *
+			 * @param string  $url The destination URL.
+			 * @param integer $new_id New post ID.
+			 * @param WP_Post $post The original post object.
+			 * @param string  $status The status of the copy.
+			 *
+			 * @return string.
+			 */
+			$sendback = apply_filters( 'duplicate_post_redirect_after_copy', $sendback, $new_id, $post, $status );
 			// Redirect to the post list screen.
 			wp_safe_redirect(
 				add_query_arg(
@@ -386,14 +392,16 @@ function duplicate_post_save_as_new_post( $status = '' ) {
 			);
 			exit();
 		} else {
-			// Redirect to the edit screen for the new draft post.
+			// Default redirect to the edit screen for the new draft post.
+			/** This filter is documented in duplicate-post-admin.php */
+			$destination = apply_filters( 'duplicate_post_redirect_after_copy', admin_url( 'post.php?action=edit&post=' . $new_id ), $new_id, $post, $status );
 			wp_safe_redirect(
 				add_query_arg(
 					array(
 						'cloned' => 1,
 						'ids'    => $post->ID,
 					),
-					admin_url( 'post.php?action=edit&post=' . $new_id . ( isset( $_GET['classic-editor'] ) ? '&classic-editor' : '' ) )
+					$destination
 				)
 			);
 			exit();
@@ -557,7 +565,7 @@ function duplicate_post_copy_attachments( $new_id, $post ) {
 	$children = get_posts(
 		array(
 			'post_type'   => 'any',
-			'numberposts' => - 1,
+			'numberposts' => -1,
 			'post_status' => 'any',
 			'post_parent' => $post->ID,
 		)
@@ -619,7 +627,7 @@ function duplicate_post_copy_children( $new_id, $post, $status = '' ) {
 	$children = get_posts(
 		array(
 			'post_type'   => 'any',
-			'numberposts' => - 1,
+			'numberposts' => -1,
 			'post_status' => 'any',
 			'post_parent' => $post->ID,
 		)
@@ -780,15 +788,13 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	 */
 	$can_duplicate = apply_filters( 'duplicate_post_allow', true, $post, $status, $parent_id );
 	if ( ! $can_duplicate ) {
-		wp_die( esc_html( __( 'You aren\'t allowed to duplicate this post', 'duplicate-post' ) ) );
+		return new WP_Error( 'duplicate_post_user_not_allowed', __( 'You aren\'t allowed to duplicate this post', 'duplicate-post' ) );
 	}
 
 	if ( ! duplicate_post_is_post_type_enabled( $post->post_type ) && 'attachment' !== $post->post_type ) {
-		wp_die(
-			esc_html(
-				__( 'Copy features for this post type are not enabled in options page', 'duplicate-post' ) . ': ' .
-				$post->post_type
-			)
+		return new WP_Error(
+			'duplicate_post_post_type_not_enabled',
+			__( 'Copy features for this post type are not enabled in options page', 'duplicate-post' ) . ': ' . $post->post_type
 		);
 	}
 
@@ -894,6 +900,11 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	$new_post    = apply_filters( 'duplicate_post_new_post', $new_post, $post );
 	$new_post_id = wp_insert_post( wp_slash( $new_post ), true );
 
+	// if the duplication failed abort the operations and return error.
+	if ( is_wp_error( $new_post_id ) ) {
+		return $new_post_id;
+	}
+
 	if ( intval( $args['copychildren'] ) !== 1 ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_children', 20 );
 		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_children', 20 );
@@ -911,19 +922,16 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 
 	// If you have written a plugin which uses non-WP database tables to save
 	// information about a post you can hook this action to dupe that data.
-	if ( 0 !== $new_post_id && ! is_wp_error( $new_post_id ) ) {
-
-		if ( 'page' === $post->post_type || is_post_type_hierarchical( $post->post_type ) ) {
-			do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_page_duplicated' );
-			do_action( 'duplicate_post_page_duplicated', $new_post_id, $post, $status );
-		} else {
-			do_action_deprecated( 'dp_duplicate_post', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
-			do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status );
-		}
-
-		delete_post_meta( $new_post_id, '_dp_original' );
-		add_post_meta( $new_post_id, '_dp_original', $post->ID );
+	if ( 'page' === $post->post_type || is_post_type_hierarchical( $post->post_type ) ) {
+		do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_page_duplicated' );
+		do_action( 'duplicate_post_page_duplicated', $new_post_id, $post, $status );
+	} else {
+		do_action_deprecated( 'dp_duplicate_post', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
+		do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status );
 	}
+
+	delete_post_meta( $new_post_id, '_dp_original' );
+	add_post_meta( $new_post_id, '_dp_original', $post->ID );
 
 	/**
 	 * Fires after duplicating a post.
