@@ -356,6 +356,7 @@ function duplicate_post_save_as_new_post( $status = '' ) {
 		}
 
 		if ( '' === $status ) {
+			// Default redirect to the post list screen.
 			$sendback = wp_get_referer();
 			if ( ! $sendback || strpos( $sendback, 'post.php' ) !== false || strpos( $sendback, 'post-new.php' ) !== false ) {
 				if ( 'attachment' === $post_type ) {
@@ -380,7 +381,6 @@ function duplicate_post_save_as_new_post( $status = '' ) {
 			 * @return string.
 			 */
 			$sendback = apply_filters( 'duplicate_post_redirect_after_copy', $sendback, $new_id, $post, $status );
-			// Redirect to the post list screen.
 			wp_safe_redirect(
 				add_query_arg(
 					array(
