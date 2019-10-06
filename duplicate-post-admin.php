@@ -12,9 +12,6 @@ if ( ! is_admin() ) {
 
 require_once dirname( __FILE__ ) . '/duplicate-post-options.php';
 
-require_once dirname( __FILE__ ) . '/compat/duplicate-post-wpml.php';
-require_once dirname( __FILE__ ) . '/compat/duplicate-post-jetpack.php';
-
 /**
  * Wrapper for the option 'duplicate_post_version'.
  */
@@ -62,27 +59,6 @@ function duplicate_post_admin_init() {
 	add_action( 'admin_action_duplicate_post_save_as_new_post_draft', 'duplicate_post_save_as_new_post_draft' );
 
 	add_filter( 'removable_query_args', 'duplicate_post_add_removable_query_arg', 10, 1 );
-
-	add_action( 'dp_duplicate_post', 'duplicate_post_copy_post_meta_info', 10, 2 );
-	add_action( 'dp_duplicate_page', 'duplicate_post_copy_post_meta_info', 10, 2 );
-
-	if ( intval( get_option( 'duplicate_post_copychildren' ) ) === 1 ) {
-		add_action( 'dp_duplicate_post', 'duplicate_post_copy_children', 20, 3 );
-		add_action( 'dp_duplicate_page', 'duplicate_post_copy_children', 20, 3 );
-	}
-
-	if ( intval( get_option( 'duplicate_post_copyattachments' ) ) === 1 ) {
-		add_action( 'dp_duplicate_post', 'duplicate_post_copy_attachments', 30, 2 );
-		add_action( 'dp_duplicate_page', 'duplicate_post_copy_attachments', 30, 2 );
-	}
-
-	if ( intval( get_option( 'duplicate_post_copycomments' ) ) === 1 ) {
-		add_action( 'dp_duplicate_post', 'duplicate_post_copy_comments', 40, 2 );
-		add_action( 'dp_duplicate_page', 'duplicate_post_copy_comments', 40, 2 );
-	}
-
-	add_action( 'dp_duplicate_post', 'duplicate_post_copy_post_taxonomies', 50, 2 );
-	add_action( 'dp_duplicate_page', 'duplicate_post_copy_post_taxonomies', 50, 2 );
 
 	add_filter( 'plugin_row_meta', 'duplicate_post_add_plugin_links', 10, 2 );
 
@@ -709,7 +685,7 @@ function duplicate_post_copy_comments( $new_id, $post ) {
 }
 
 /**
- * Creates a duplicate from a post.
+ * Creates a duplicate from a post based on currently stored options.
  *
  * This is the main functions that does the cloning.
  *
@@ -719,6 +695,71 @@ function duplicate_post_copy_comments( $new_id, $post ) {
  * @return number|WP_Error.
  */
 function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' ) {
+
+	$options = array(
+		'copytitle'              => get_option( 'duplicate_post_copytitle' ),
+		'copydate'               => get_option( 'duplicate_post_copydate' ),
+		'copystatus'             => get_option( 'duplicate_post_copystatus' ),
+		'copyslug'               => get_option( 'duplicate_post_copyslug' ),
+		'copyexcerpt'            => get_option( 'duplicate_post_copyexcerpt' ),
+		'copycontent'            => get_option( 'duplicate_post_copycontent' ),
+		'copythumbnail'          => get_option( 'duplicate_post_copythumbnail' ),
+		'copytemplate'           => get_option( 'duplicate_post_copytemplate' ),
+		'copyformat'             => get_option( 'duplicate_post_copyformat' ),
+		'copyauthor'             => get_option( 'duplicate_post_copyauthor' ),
+		'copypassword'           => get_option( 'duplicate_post_copypassword' ),
+		'copyattachments'        => get_option( 'duplicate_post_copyattachments' ),
+		'copychildren'           => get_option( 'duplicate_post_copychildren' ),
+		'copycomments'           => get_option( 'duplicate_post_copycomments' ),
+		'copymenuorder'          => get_option( 'duplicate_post_copymenuorder' ),
+		'blacklist'              => get_option( 'duplicate_post_blacklist' ),
+		'taxonomies_blacklist'   => get_option( 'duplicate_post_taxonomies_blacklist' ),
+		'title_prefix'           => get_option( 'duplicate_post_title_prefix' ),
+		'title_suffix'           => get_option( 'duplicate_post_title_suffix' ),
+		'increase_menu_order_by' => get_option( 'duplicate_post_increase_menu_order_by' ),
+	);
+
+	$new_post_id = duplicate_post_perform_duplication( $post, $status, $parent_id, $options );
+
+	return $new_post_id;
+}
+
+/**
+ * Creates a duplicate from a post based on settings passed by array.
+ *
+ * This is the main functions that does the cloning.
+ *
+ * @param WP_Post $post The original post object.
+ * @param string  $status Optional. The intended destination status.
+ * @param string  $parent_id Optional. The parent post ID if we are calling this recursively.
+ * @param array   $args Optional. Array of settings.
+ * @return number|WP_Error.
+ */
+function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '', $args = array() ) {
+	$defaults = array(
+		'copytitle'              => '1',
+		'copydate'               => '0',
+		'copystatus'             => '0',
+		'copyslug'               => '0',
+		'copyexcerpt'            => '1',
+		'copycontent'            => '1',
+		'copythumbnail'          => '1',
+		'copytemplate'           => '1',
+		'copyformat'             => '1',
+		'copyauthor'             => '0',
+		'copypassword'           => '0',
+		'copyattachments'        => '0',
+		'copychildren'           => '0',
+		'copycomments'           => '0',
+		'copymenuorder'          => '1',
+		'blacklist'              => '',
+		'taxonomies_blacklist'   => array(),
+		'title_prefix'           => '',
+		'title_suffix'           => '',
+		'increase_menu_order_by' => '0',
+	);
+	$args     = wp_parse_args( $args, $defaults );
+
 	/**
 	 * Fires before duplicating a post.
 	 *
@@ -755,9 +796,9 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 	$title           = ' ';
 
 	if ( 'attachment' !== $post->post_type ) {
-		$prefix = sanitize_text_field( get_option( 'duplicate_post_title_prefix' ) );
-		$suffix = sanitize_text_field( get_option( 'duplicate_post_title_suffix' ) );
-		if ( 1 === intval( get_option( 'duplicate_post_copytitle' ) ) ) {
+		$prefix = sanitize_text_field( $args['title_prefix'] );
+		$suffix = sanitize_text_field( $args['title_suffix'] );
+		if ( 1 === intval( $args['copytitle'] ) ) {
 			$title = $post->post_title;
 			if ( ! empty( $prefix ) ) {
 				$prefix .= ' ';
@@ -774,7 +815,7 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 			// empty title.
 			$title = __( 'Untitled' );
 		}
-		if ( 0 === intval( get_option( 'duplicate_post_copystatus' ) ) ) {
+		if ( 0 === intval( $args['copystatus'] ) ) {
 			$new_post_status = 'draft';
 		} else {
 			if ( 'publish' === $new_post_status || 'future' === $new_post_status ) {
@@ -794,7 +835,7 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 
 	$new_post_author    = wp_get_current_user();
 	$new_post_author_id = $new_post_author->ID;
-	if ( '1' === intval( get_option( 'duplicate_post_copyauthor' ) ) ) {
+	if ( '1' === intval( $args['copyauthor'] ) ) {
 		// check if the user has the right capability.
 		if ( is_post_type_hierarchical( $post->post_type ) ) {
 			if ( current_user_can( 'edit_others_pages' ) ) {
@@ -807,14 +848,14 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 		}
 	}
 
-	$menu_order             = ( '1' === intval( get_option( 'duplicate_post_copymenuorder' ) ) ) ? $post->menu_order : 0;
-	$increase_menu_order_by = get_option( 'duplicate_post_increase_menu_order_by' );
+	$menu_order             = ( '1' === intval( $args['copymenuorder'] ) ) ? $post->menu_order : 0;
+	$increase_menu_order_by = $args['increase_menu_order_by'];
 	if ( ! empty( $increase_menu_order_by ) && is_numeric( $increase_menu_order_by ) ) {
 		$menu_order += intval( $increase_menu_order_by );
 	}
 
 	$post_name = $post->post_name;
-	if ( 1 !== intval( get_option( 'duplicate_post_copyslug' ) ) ) {
+	if ( 1 !== intval( $args['copyslug'] ) ) {
 		$post_name = '';
 	}
 	$new_post_parent = empty( $parent_id ) ? $post->post_parent : $parent_id;
@@ -824,19 +865,19 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 		'comment_status'        => $post->comment_status,
 		'ping_status'           => $post->ping_status,
 		'post_author'           => $new_post_author_id,
-		'post_content'          => ( 1 === intval( get_option( 'duplicate_post_copycontent' ) ) ) ? $post->post_content : '',
-		'post_content_filtered' => ( 1 === intval( get_option( 'duplicate_post_copycontent' ) ) ) ? $post->post_content_filtered : '',
-		'post_excerpt'          => ( 1 === intval( get_option( 'duplicate_post_copyexcerpt' ) ) ) ? $post->post_excerpt : '',
+		'post_content'          => ( 1 === intval( $args['copycontent'] ) ) ? $post->post_content : '',
+		'post_content_filtered' => ( 1 === intval( $args['copycontent'] ) ) ? $post->post_content_filtered : '',
+		'post_excerpt'          => ( 1 === intval( $args['copyexcerpt'] ) ) ? $post->post_excerpt : '',
 		'post_mime_type'        => $post->post_mime_type,
 		'post_parent'           => $new_post_parent,
-		'post_password'         => ( 1 === intval( get_option( 'duplicate_post_copypassword' ) ) ) ? $post->post_password : '',
+		'post_password'         => ( 1 === intval( $args['copypassword'] ) ) ? $post->post_password : '',
 		'post_status'           => $new_post_status,
 		'post_title'            => $title,
 		'post_type'             => $post->post_type,
 		'post_name'             => $post_name,
 	);
 
-	if ( 1 === intval( get_option( 'duplicate_post_copydate' ) ) ) {
+	if ( 1 === intval( $args['copydate'] ) ) {
 		$new_post_date             = $post->post_date;
 		$new_post['post_date']     = $new_post_date;
 		$new_post['post_date_gmt'] = get_gmt_from_date( $new_post_date );
@@ -853,14 +894,31 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 	$new_post    = apply_filters( 'duplicate_post_new_post', $new_post, $post );
 	$new_post_id = wp_insert_post( wp_slash( $new_post ), true );
 
+	if ( intval( $args['copychildren'] ) !== 1 ) {
+		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_children', 20 );
+		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_children', 20 );
+	}
+
+	if ( intval( $args['copyattachments'] ) !== 1 ) {
+		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_attachments', 30 );
+		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_attachments', 30 );
+	}
+
+	if ( intval( $args['copycomments'] ) !== 1 ) {
+		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_comments', 40 );
+		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_comments', 40 );
+	}
+
 	// If you have written a plugin which uses non-WP database tables to save
 	// information about a post you can hook this action to dupe that data.
 	if ( 0 !== $new_post_id && ! is_wp_error( $new_post_id ) ) {
 
 		if ( 'page' === $post->post_type || is_post_type_hierarchical( $post->post_type ) ) {
-			do_action( 'dp_duplicate_page', $new_post_id, $post, $status );
+			do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_page_duplicated' );
+			do_action( 'duplicate_post_page_duplicated', $new_post_id, $post, $status );
 		} else {
-			do_action( 'dp_duplicate_post', $new_post_id, $post, $status );
+			do_action_deprecated( 'dp_duplicate_post', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
+			do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status );
 		}
 
 		delete_post_meta( $new_post_id, '_dp_original' );

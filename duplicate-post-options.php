@@ -1,6 +1,6 @@
 <?php
 /**
- * Options page
+ * Options page.
  *
  * @package Duplicate Post
  * @since 2.0

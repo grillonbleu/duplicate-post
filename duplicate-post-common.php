@@ -6,6 +6,35 @@
  * @since 2.0
  */
 
+/*
+ * Require functions for compatibility with other plugins.
+ */
+require_once dirname( __FILE__ ) . '/compat/duplicate-post-wpml.php';
+require_once dirname( __FILE__ ) . '/compat/duplicate-post-jetpack.php';
+
+add_action( 'plugins_loaded', 'duplicate_post_plugins_loaded' );
+/**
+ * Attaches functions to the main hooks.
+ *
+ * @ignore
+ */
+function duplicate_post_plugins_loaded() {
+	add_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_meta_info', 10, 2 );
+	add_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_post_meta_info', 10, 2 );
+
+	add_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_children', 20, 3 );
+	add_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_children', 20, 3 );
+
+	add_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_attachments', 30, 2 );
+	add_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_attachments', 30, 2 );
+
+	add_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_comments', 40, 2 );
+	add_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_comments', 40, 2 );
+
+	add_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_taxonomies', 50, 2 );
+	add_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_post_taxonomies', 50, 2 );
+}
+
 /**
  * Tests if the user is allowed to copy posts.
  *
