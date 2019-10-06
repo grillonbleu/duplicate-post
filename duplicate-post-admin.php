@@ -784,7 +784,7 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 		'copyattachments'        => '0',
 		'copychildren'           => '0',
 		'copycomments'           => '0',
-		'copycommentmeta'		 => '0',
+		'copycommentmeta'        => '0',
 		'copymenuorder'          => '1',
 		'blacklist'              => '',
 		'taxonomies_blacklist'   => array(),
