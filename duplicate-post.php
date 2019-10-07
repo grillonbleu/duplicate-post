@@ -67,6 +67,10 @@ function duplicate_post_plugin_actions( $actions, $plugin_file, $plugin_data, $c
 
 require_once dirname( __FILE__ ) . '/duplicate-post-common.php';
 
-if ( is_admin() ) {
+if ( is_admin() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 	include_once dirname( __FILE__ ) . '/duplicate-post-admin.php';
+}
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once dirname( __FILE__ ) . '/duplicate-post-cli.php';
 }
