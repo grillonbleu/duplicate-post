@@ -72,5 +72,5 @@ if ( is_admin() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 }
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	require_once dirname( __FILE__ ) . '/duplicate-post-cli.php';
+	require_once dirname( __FILE__ ) . '/class-duplicate-post-cli.php';
 }

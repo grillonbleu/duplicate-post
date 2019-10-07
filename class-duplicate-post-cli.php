@@ -1,6 +1,13 @@
 <?php
 /**
- * Just a few sample commands to learn how WP-CLI works
+ * WP CLI interface.
+ *
+ * @package Duplicate Post
+ * @since 4.0
+ */
+
+/**
+ * Class Duplicate_Post_CLI
  */
 class Duplicate_Post_CLI {
 	/**
@@ -10,6 +17,9 @@ class Duplicate_Post_CLI {
 	 *
 	 * <id>
 	 * : The post/page ID.
+	 *
+	 * [--use-options]
+	 * : Use options stored in DB as defaults.
 	 *
 	 * [--[no-]copytitle]
 	 * : Whether to copy post title. Default: yes.
@@ -61,22 +71,21 @@ class Duplicate_Post_CLI {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     # Schedule a new cron event.
-	 *     $ wp cron event schedule cron_test
-	 *     Success: Scheduled event with hook 'cron_test' for 2016-05-31 10:19:16 GMT.
+	 *     # Duplicate a post
+	 *     $ wp post duplicate 42
+	 *     Success: Created post with ID 69.
 	 *
-	 *     # Schedule new cron event with hourly recurrence.
-	 *     $ wp cron event schedule cron_test now hourly
-	 *     Success: Scheduled event with hook 'cron_test' for 2016-05-31 10:20:32 GMT.
-	 *
-	 *     # Schedule new cron event and pass associative arguments.
-	 *     $ wp cron event schedule cron_test '+1 hour' --foo=1 --bar=2
-	 *     Success: Scheduled event with hook 'cron_test' for 2016-05-31 11:21:35 GMT.
+	 * @param array $args The parameters array.
+	 * @param array $assoc_args The options associative array.
 	 */
 	public function __invoke( $args, $assoc_args ) {
 		WP_CLI::line( 'Duplicating post with ID ' . $args[0] );
 		$post = get_post( $args[0] );
-		$new_id = duplicate_post_perform_duplication( $post, '', '', $assoc_args );
+		if ( isset( $assoc_args['use-options'] ) && $assoc_args['use-options'] ) {
+			$new_id = duplicate_post_create_duplicate( $post, '', '', $assoc_args );
+		} else {
+			$new_id = duplicate_post_perform_duplication( $post, '', '', $assoc_args );
+		}
 		if ( is_wp_error( $new_id ) ) {
 			WP_CLI::line( $new_id->get_error_message() );
 		} else {
