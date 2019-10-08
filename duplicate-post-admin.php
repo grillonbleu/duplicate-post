@@ -797,6 +797,13 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	);
 	$args     = wp_parse_args( $args, $defaults );
 
+	if ( ! is_a( $post, 'WP_Post' ) ) {
+		return new WP_Error(
+			'duplicate_post_no_post_submitted',
+			__( 'No post to duplicate has been submitted.', 'duplicate-post' )
+		);
+	}
+
 	/**
 	 * Fires before duplicating a post.
 	 *
