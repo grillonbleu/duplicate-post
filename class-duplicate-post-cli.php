@@ -15,8 +15,8 @@ class Duplicate_Post_CLI {
 	 *
 	 * ## OPTIONS
 	 *
-	 * <id>
-	 * : The post/page ID.
+	 * <id>...
+	 * : One or more IDs of posts to duplicate.
 	 *
 	 * [--use-options]
 	 * : Use options stored in DB as defaults.
@@ -79,17 +79,19 @@ class Duplicate_Post_CLI {
 	 * @param array $assoc_args The options associative array.
 	 */
 	public function __invoke( $args, $assoc_args ) {
-		WP_CLI::line( 'Duplicating post with ID ' . $args[0] );
-		$post = get_post( $args[0] );
-		if ( isset( $assoc_args['use-options'] ) && $assoc_args['use-options'] ) {
-			$new_id = duplicate_post_create_duplicate( $post, '', '', $assoc_args );
-		} else {
-			$new_id = duplicate_post_perform_duplication( $post, '', '', $assoc_args );
-		}
-		if ( is_wp_error( $new_id ) ) {
-			WP_CLI::line( $new_id->get_error_message() );
-		} else {
-			WP_CLI::line( 'Created post with ID ' . $new_id );
+		foreach ( $args as $id ) {
+			$post = get_post( $id );
+			if ( isset( $assoc_args['use-options'] ) && $assoc_args['use-options'] ) {
+				$new_id = duplicate_post_create_duplicate( $post, '', '', $assoc_args );
+			} else {
+				$new_id = duplicate_post_perform_duplication( $post, '', '', $assoc_args );
+			}
+			if ( is_wp_error( $new_id ) ) {
+				WP_CLI::warning( $new_id->get_error_message() );
+			} else {
+				// Translators: .
+				WP_CLI::success( sprintf( __( 'Duplicated post with ID %1$s to post with ID %2$s.', 'duplicate-post' ), $id, $new_id ) );
+			}
 		}
 	}
 }
