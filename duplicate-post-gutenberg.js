@@ -1,3 +1,10 @@
+/**
+ * Gutenberg/Block editor sidebar definition
+ *
+ * @package Duplicate Post
+ * @since 4.0
+ */
+
 ( function( wp ) {
 	var registerPlugin            = wp.plugins.registerPlugin;
 	var Fragment                  = wp.element.Fragment;
