@@ -766,9 +766,9 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '', 
  * This is the main functions that does the cloning.
  *
  * @param int/WP_Post $post The original post object or ID.
- * @param string  $status Optional. The intended destination status.
- * @param string  $parent_id Optional. The parent post ID if we are calling this recursively.
- * @param array   $args Optional. Array of settings.
+ * @param string      $status Optional. The intended destination status.
+ * @param string      $parent_id Optional. The parent post ID if we are calling this recursively.
+ * @param array       $args Optional. Array of settings.
  * @return number|WP_Error.
  */
 function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '', $args = array() ) {
