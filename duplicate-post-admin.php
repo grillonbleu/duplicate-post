@@ -722,12 +722,13 @@ function duplicate_post_copy_comments( $new_id, $post, $status, $args ) {
  *
  * This is the main functions that does the cloning.
  *
- * @param WP_Post $post The original post object.
- * @param string  $status Optional. The intended destination status.
- * @param string  $parent_id Optional. The parent post ID if we are calling this recursively.
+ * @param int/WP_Post $post The original post object or ID.
+ * @param string      $status Optional. The intended destination status.
+ * @param string      $parent_id Optional. The parent post ID if we are calling this recursively.
+ * @param array       $args Optional. Array of settings overriding options.
  * @return number|WP_Error.
  */
-function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' ) {
+function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '', $args = array() ) {
 
 	$options = array(
 		'copytitle'              => get_option( 'duplicate_post_copytitle' ),
@@ -752,6 +753,8 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
 		'increase_menu_order_by' => get_option( 'duplicate_post_increase_menu_order_by' ),
 	);
 
+	$options = wp_parse_args( $args, $options );
+
 	$new_post_id = duplicate_post_perform_duplication( $post, $status, $parent_id, $options );
 
 	return $new_post_id;
@@ -762,7 +765,7 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '' )
  *
  * This is the main functions that does the cloning.
  *
- * @param WP_Post $post The original post object.
+ * @param int/WP_Post $post The original post object or ID.
  * @param string  $status Optional. The intended destination status.
  * @param string  $parent_id Optional. The parent post ID if we are calling this recursively.
  * @param array   $args Optional. Array of settings.
@@ -794,7 +797,8 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	);
 	$args     = wp_parse_args( $args, $defaults );
 
-	if ( ! is_a( $post, 'WP_Post' ) ) {
+	$post = get_post( $post );
+	if ( ! $post ) {
 		return new WP_Error(
 			'duplicate_post_no_post_submitted',
 			__( 'No post to duplicate has been submitted.', 'duplicate-post' )
