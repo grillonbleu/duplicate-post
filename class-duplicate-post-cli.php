@@ -21,53 +21,68 @@ class Duplicate_Post_CLI {
 	 * [--use-options]
 	 * : Use options stored in DB as defaults.
 	 *
-	 * [--[no-]copytitle]
+	 * [--[no-]title]
 	 * : Whether to copy post title. Default: yes.
 	 *
-	 * [--[no-]copydate]
+	 * [--[no-]date]
 	 * : Whether to copy post date. Default: no.
 	 *
-	 * [--[no-]copystatus]
+	 * [--[no-]status]
 	 * : Whether to copy post status. Default: no.
 	 *
-	 * [--[no-]copyslug]
+	 * [--[no-]slug]
 	 * : Whether to copy post slug. Default: no.
 	 *
-	 * [--[no-]copyexcerpt]
+	 * [--[no-]excerpt]
 	 * : Whether to copy post excerpt. Default: yes.
 	 *
-	 * [--[no-]copycontent]
+	 * [--[no-]content]
 	 * : Whether to copy post content. Default: yes.
 	 *
-	 * [--[no-]copythumbnail]
+	 * [--[no-]thumbnail]
 	 * : Whether to copy post thumbnail. Default: yes.
 	 *
-	 * [--[no-]copytemplate]
+	 * [--[no-]template]
 	 * : Whether to copy post template. Default: yes.
 	 *
-	 * [--[no-]copyformat]
+	 * [--[no-]format]
 	 * : Whether to copy post format. Default: yes.
 	 *
-	 * [--[no-]copyauthor]
+	 * [--[no-]author]
 	 * : Whether to copy post author. Default: no.
 
-	 * [--[no-]copypassword]
+	 * [--[no-]password]
 	 * : Whether to copy post password. Default: no.
 	 *
-	 * [--[no-]copyattachments]
+	 * [--[no-]attachments]
 	 * : Whether to copy post attachments. Default: no.
 	 *
-	 * [--[no-]copychildren]
+	 * [--[no-]children]
 	 * : Whether to copy post children. Default: no.
 	 *
-	 * [--[no-]copycomments]
+	 * [--[no-]comments]
 	 * : Whether to copy post comments. Default: no.
 	 *
-	 * [--[no-]copycommentmeta]
+	 * [--[no-]commentmeta]
 	 * : Whether to copy post comment meta fields. Default: no.
 	 *
-	 * [--[no-]copymenuorder]
+	 * [--[no-]menu_order]
 	 * : Whether to copy post menu order. Default: yes.
+	 *
+	 * [--title-prefix=<value>]
+	 * : String to prepend to the post title. Default: "".
+	 *
+	 * [--title-suffix=<value>]
+	 * : String to append to the post title. Default: "".
+	 *
+	 * [--increase-menu-order-by=<value>]
+	 * : Number to add to the menu order of the original page.  Default: 0.
+	 *
+	 * [--skip-post-meta[=<value>]]
+	 * : Skip copying all or some meta fields (comma-separated list). Default: "".
+	 *
+	 * [--skip-taxonomies[=<value>]]
+	 * : Skip copying all or some taxonomies (comma-separated list). Default: "".
 	 *
 	 * ## EXAMPLES
 	 *
