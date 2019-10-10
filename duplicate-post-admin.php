@@ -438,9 +438,13 @@ function duplicate_post_copy_post_taxonomies( $new_id, $post, $status, $args ) {
 			$post_taxonomies[] = 'post_format';
 		}
 
-		$taxonomies_blacklist = $args['taxonomies_blacklist'];
-		if ( '' === $taxonomies_blacklist ) {
+		$taxonomies_blacklist = $args['skip-taxonomies'];
+		if ( false === $taxonomies_blacklist || '' === $taxonomies_blacklist ) {
 			$taxonomies_blacklist = array();
+		} elseif ( ! is_array( $taxonomies_blacklist ) ) {
+			$taxonomies_blacklist = explode( ',', $taxonomies_blacklist );
+			$taxonomies_blacklist = array_filter( $taxonomies_blacklist );
+			$taxonomies_blacklist = array_map( 'trim', $taxonomies_blacklist );
 		}
 		if ( intval( $args['format'] ) === 0 ) {
 			$taxonomies_blacklist[] = 'post_format';
@@ -471,8 +475,8 @@ function duplicate_post_copy_post_meta_info( $new_id, $post, $status, $args ) {
 	if ( empty( $post_meta_keys ) ) {
 		return;
 	}
-	$meta_blacklist = $args['blacklist'];
-	if ( '' === $meta_blacklist ) {
+	$meta_blacklist = $args['skip-post-meta'];
+	if ( false === $meta_blacklist || '' === $meta_blacklist ) {
 		$meta_blacklist = array();
 	} else {
 		$meta_blacklist = explode( ',', $meta_blacklist );
@@ -745,12 +749,12 @@ function duplicate_post_create_duplicate( $post, $status = '', $parent_id = '', 
 		'attachments'            => get_option( 'duplicate_post_copyattachments' ),
 		'children'               => get_option( 'duplicate_post_copychildren' ),
 		'comments'               => get_option( 'duplicate_post_copycomments' ),
-		'menuorder'              => get_option( 'duplicate_post_copymenuorder' ),
-		'blacklist'              => get_option( 'duplicate_post_blacklist' ),
-		'taxonomies_blacklist'   => get_option( 'duplicate_post_taxonomies_blacklist' ),
-		'title_prefix'           => get_option( 'duplicate_post_title_prefix' ),
-		'title_suffix'           => get_option( 'duplicate_post_title_suffix' ),
-		'increase_menu_order_by' => get_option( 'duplicate_post_increase_menu_order_by' ),
+		'menu_order'             => get_option( 'duplicate_post_copymenuorder' ),
+		'skip-post-meta'         => get_option( 'duplicate_post_blacklist' ),
+		'skip-taxonomies'        => get_option( 'duplicate_post_taxonomies_blacklist' ),
+		'title-prefix'           => get_option( 'duplicate_post_title_prefix' ),
+		'title-suffix'           => get_option( 'duplicate_post_title_suffix' ),
+		'increase-menu-order-by' => get_option( 'duplicate_post_increase_menu_order_by' ),
 	);
 
 	$options = wp_parse_args( $args, $options );
@@ -788,12 +792,12 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 		'children'               => '0',
 		'comments'               => '0',
 		'commentmeta'            => '0',
-		'menuorder'              => '1',
-		'blacklist'              => '',
-		'taxonomies_blacklist'   => array(),
-		'title_prefix'           => '',
-		'title_suffix'           => '',
-		'increase_menu_order_by' => '0',
+		'menu_order'             => '1',
+		'skip-post-meta'         => '',
+		'skip-taxonomies'        => array(),
+		'title-prefix'           => '',
+		'title-suffix'           => '',
+		'increase-menu-order-by' => '0',
 	);
 	$args     = wp_parse_args( $args, $defaults );
 
@@ -839,8 +843,8 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	$title           = ' ';
 
 	if ( 'attachment' !== $post->post_type ) {
-		$prefix = sanitize_text_field( $args['title_prefix'] );
-		$suffix = sanitize_text_field( $args['title_suffix'] );
+		$prefix = sanitize_text_field( $args['title-prefix'] );
+		$suffix = sanitize_text_field( $args['title-suffix'] );
 		if ( 1 === intval( $args['title'] ) ) {
 			$title = $post->post_title;
 			if ( ! empty( $prefix ) ) {
@@ -891,8 +895,8 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 		}
 	}
 
-	$menu_order             = ( '1' === intval( $args['menuorder'] ) ) ? $post->menu_order : 0;
-	$increase_menu_order_by = $args['increase_menu_order_by'];
+	$menu_order             = ( '1' === intval( $args['menu_order'] ) ) ? $post->menu_order : 0;
+	$increase_menu_order_by = $args['increase-menu-order-by'];
 	if ( ! empty( $increase_menu_order_by ) && is_numeric( $increase_menu_order_by ) ) {
 		$menu_order += intval( $increase_menu_order_by );
 	}
@@ -942,6 +946,11 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 		return $new_post_id;
 	}
 
+	if ( true === $args['skip-post-meta'] ) {
+		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_meta_info', 10 );
+		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_post_meta_info', 10 );
+	}
+
 	if ( intval( $args['children'] ) !== 1 ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_children', 20 );
 		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_children', 20 );
@@ -955,6 +964,11 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 	if ( intval( $args['comments'] ) !== 1 ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_comments', 40 );
 		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_comments', 40 );
+	}
+
+	if ( true === $args['skip-taxonomies'] ) {
+		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_taxonomies', 50 );
+		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_post_taxonomies', 50 );
 	}
 
 	// If you have written a plugin which uses non-WP database tables to save
