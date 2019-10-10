@@ -91,3 +91,30 @@
 		}
 	);
 } )( window.wp );
+
+function duplicate_post_show_notice( wp, copied_posts ) {
+	const { __, _x, _n, _nx, sprintf }     = wp.i18n;
+
+	wp.data.dispatch( 'core/notices' ).createNotice(
+		'success', // Can be one of: success, info, warning, error.
+		sprintf(
+			_n(
+				'%d item copied.',
+				'%d items copied.',
+				copied_posts,
+				'duplicate-post'
+			),
+			copied_posts
+		),
+		{
+			isDismissible: true, // Whether the user can dismiss the notice.
+		}
+	);
+}
+
+let params = new URLSearchParams(document.location.search.substring( 1 ));
+let ids = params.getAll("ids");
+
+if ( ids.length ) {
+	duplicate_post_show_notice( window.wp, ids.length );
+}
