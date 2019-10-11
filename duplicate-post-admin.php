@@ -1029,6 +1029,9 @@ function duplicate_post_sidebar_plugin_script_enqueue() {
 		$duplicate_post_data = array(
 			'duplicate_post_url' => duplicate_post_get_clone_post_link( $post_id ),
 		);
+		if ( ! empty( $_REQUEST['cloned'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+			$duplicate_post_data['cloned'] = intval( $_REQUEST['cloned'] ); // phpcs:ignore WordPress.Security.NonceVerification
+		}
 
 		wp_register_script(
 			'duplicate-post-sidebar-js',
@@ -1044,10 +1047,6 @@ function duplicate_post_sidebar_plugin_script_enqueue() {
 			true
 		);
 		wp_localize_script( 'duplicate-post-sidebar-js', 'duplicate_post_data', $duplicate_post_data );
-		if ( ! empty( $_REQUEST['cloned'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-			$copied_posts = intval( $_REQUEST['cloned'] ); // phpcs:ignore WordPress.Security.NonceVerification
-			wp_localize_script( 'duplicate-post-sidebar-js', 'duplicatePostVars', array( 'cloned' => $copied_posts ) );
-		}
 		wp_enqueue_script( 'duplicate-post-sidebar-js' );
 		wp_enqueue_style( 'duplicate-post-sidebar-css', plugins_url( '/duplicate-post-gutenberg.css', __FILE__ ), null, DUPLICATE_POST_CURRENT_VERSION );
 		wp_set_script_translations( 'duplicate-post-sidebar-js', 'duplicate-post' );
