@@ -924,6 +924,13 @@ function duplicate_post_action_admin_notice() {
 			esc_html( $copied_posts )
 		);
 		remove_query_arg( 'cloned' );
+
+		add_action(
+			'wp_print_footer_scripts',
+			function() {
+				wp_localize_script( 'duplicate-post-sidebar-js', 'duplicatePostVars', array( 'cloned' => true ) );
+			}
+		);
 	}
 }
 

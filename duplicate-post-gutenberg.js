@@ -112,9 +112,9 @@ function duplicate_post_show_notice( wp, copied_posts ) {
 	);
 }
 
-let params = new URLSearchParams(document.location.search.substring( 1 ));
-let ids = params.getAll("ids");
+let params = new URLSearchParams( document.location.search.substring( 1 ) );
+let ids    = params.getAll( "ids" );
 
-if ( ids.length ) {
+if ( duplicatePostVars.cloned ) {
 	duplicate_post_show_notice( window.wp, ids.length );
 }
