@@ -1051,8 +1051,9 @@ function duplicate_post_sidebar_plugin_script_enqueue() {
 }
 add_action(	'wp_print_footer_scripts', 'duplicate_post_gutenberg_admin_notice' );
 function duplicate_post_gutenberg_admin_notice() {
-	if ( ! empty( $_REQUEST['cloned'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-		$copied_posts = intval( $_REQUEST['cloned'] ); // phpcs:ignore WordPress.Security.NonceVerification
-		wp_localize_script( 'duplicate-post-sidebar-js', 'duplicatePostVars', array( 'cloned' => $copied_posts ) );
-	}
+	//if ( ! empty( $_REQUEST['cloned'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+	//	$copied_posts = intval( $_REQUEST['cloned'] ); // phpcs:ignore WordPress.Security.NonceVerification
+	$copied_posts = 3; // phpcs:ignore WordPress.Security.NonceVerification
+    wp_localize_script( 'duplicate-post-sidebar-js', 'duplicatePostVars', array( 'cloned' => $copied_posts ) );
+	//}
 }
