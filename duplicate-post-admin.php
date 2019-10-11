@@ -924,13 +924,6 @@ function duplicate_post_action_admin_notice() {
 			esc_html( $copied_posts )
 		);
 		remove_query_arg( 'cloned' );
-
-		add_action(
-			'wp_print_footer_scripts',
-			function() {
-				wp_localize_script( 'duplicate-post-sidebar-js', 'duplicatePostVars', array( 'cloned' => true ) );
-			}
-		);
 	}
 }
 
@@ -1054,5 +1047,12 @@ function duplicate_post_sidebar_plugin_script_enqueue() {
 		wp_enqueue_script( 'duplicate-post-sidebar-js' );
 		wp_enqueue_style( 'duplicate-post-sidebar-css', plugins_url( '/duplicate-post-gutenberg.css', __FILE__ ), null, DUPLICATE_POST_CURRENT_VERSION );
 		wp_set_script_translations( 'duplicate-post-sidebar-js', 'duplicate-post' );
+	}
+}
+add_action(	'wp_print_footer_scripts', 'duplicate_post_gutenberg_admin_notice' );
+function duplicate_post_gutenberg_admin_notice() {
+	if ( ! empty( $_REQUEST['cloned'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		$copied_posts = intval( $_REQUEST['cloned'] ); // phpcs:ignore WordPress.Security.NonceVerification
+		wp_localize_script( 'duplicate-post-sidebar-js', 'duplicatePostVars', array( 'cloned' => $copied_posts ) );
 	}
 }
