@@ -948,38 +948,45 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 
 	if ( true === $args['skip-post-meta'] ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_meta_info', 10 );
-		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_post_meta_info', 10 );
 	}
 
 	if ( intval( $args['children'] ) !== 1 ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_children', 20 );
-		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_children', 20 );
 	}
 
 	if ( intval( $args['attachments'] ) !== 1 ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_attachments', 30 );
-		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_attachments', 30 );
 	}
 
 	if ( intval( $args['comments'] ) !== 1 ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_comments', 40 );
-		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_comments', 40 );
 	}
 
 	if ( true === $args['skip-taxonomies'] ) {
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_taxonomies', 50 );
-		remove_action( 'duplicate_post_page_duplicated', 'duplicate_post_copy_post_taxonomies', 50 );
 	}
 
-	// If you have written a plugin which uses non-WP database tables to save
-	// information about a post you can hook this action to dupe that data.
+	//
 	if ( 'page' === $post->post_type || is_post_type_hierarchical( $post->post_type ) ) {
-		do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_page_duplicated' );
-		do_action( 'duplicate_post_page_duplicated', $new_post_id, $post, $status, $args );
+		do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
 	} else {
 		do_action_deprecated( 'dp_duplicate_post', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
-		do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status, $args );
 	}
+
+	/**
+	 * Fires after having inserted the copy in the database.
+	 *
+	 * If you have written a plugin which uses non-WP database tables to save
+	 * information about a post you can hook this action to dupe that data.
+	 *
+	 * @param integer|WP_Error $new_post_id The new post id or WP_Error object on error.
+	 * @param WP_Post          $post        The original post object.
+	 * @param boolean          $status      The intended destination status.
+	 * @param array            $args        Array of settings.
+	 *
+	 * @since 4.0
+	 */
+	do_action( 'duplicate_post_post_duplicated', $new_post_id, $post, $status, $args );
 
 	delete_post_meta( $new_post_id, '_dp_original' );
 	add_post_meta( $new_post_id, '_dp_original', $post->ID );
