@@ -966,7 +966,6 @@ function duplicate_post_perform_duplication( $post, $status = '', $parent_id = '
 		remove_action( 'duplicate_post_post_duplicated', 'duplicate_post_copy_post_taxonomies', 50 );
 	}
 
-	//
 	if ( 'page' === $post->post_type || is_post_type_hierarchical( $post->post_type ) ) {
 		do_action_deprecated( 'dp_duplicate_page', array( $new_post_id, $post, $status ), '4.0', 'duplicate_post_post_duplicated' );
 	} else {
